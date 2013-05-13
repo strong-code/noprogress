@@ -1,4 +1,4 @@
 noprogress
 ==========
 
-community created #fit &amp; #lifting training logs dicks
+community created #fit &amp; #lifting training logs
