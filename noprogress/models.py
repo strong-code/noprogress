@@ -67,15 +67,15 @@ class Workout(db.Model, IdMixin):
 
     user = db.relationship("User", backref=db.backref("workouts",
                                                       cascade="all, delete, delete-orphan",
-                                                      lazy="dynamic"))
+                                                      lazy="dynamic",
+                                                      order_by="Workout.date"))
 
-    @property
-    def lifts_map(self):
-        if not hasattr(self, "_lifts_map"):
-            self._lifts_map = {}
-            for lift in self.lifts:
-                self._lifts_map.setdefault(lift.name, []).extend(lift.sets)
-        return self._lifts_map
+    def to_api(self):
+        return {
+            "date": self.date.strftime("%Y-%m-%d"),
+            "comment": self.comment,
+            "lifts": [l.to_api() for l in self.lifts]
+        }
 
 
 class Lift(db.Model, IdMixin):
@@ -91,6 +91,12 @@ class Lift(db.Model, IdMixin):
                                                             lazy="joined",
                                                             order_by="Lift.order"))
 
+    def to_api(self):
+        return {
+            "name": self.name,
+            "sets": [s.to_api() for s in self.sets]
+        }
+
 
 class Set(db.Model, IdMixin):
     __tablename__ = "sets"
@@ -105,3 +111,9 @@ class Set(db.Model, IdMixin):
                                                       cascade="all, delete, delete-orphan",
                                                       lazy="joined",
                                                       order_by="Set.order"))
+
+    def to_api(self):
+        return {
+            "weight": self.weight,
+            "reps": self.reps
+        }

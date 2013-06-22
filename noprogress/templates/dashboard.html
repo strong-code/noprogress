@@ -1,54 +1,47 @@
 {% extends "_layout.html" %}
 
-{% macro display_sets(sets) -%}
-    {% for set in sets %}
-        {{set.weight}}kg/{{set.reps}}<br>
-    {% endfor %}
-{%- endmacro %}
-
-{% block title %}Dashboard{% endblock %}
-
 {% block content %}
-<div class="row">
-    <div class="large-12 columns">
-        <h2>Hey there.</h2>
-        <h4 class="subheader">Welcome to your training logs.</h4>
+<div id="app" ng-app="noprogress">
+    <div class="row">
+        <div class="large-12 columns">
+            <h2>Hey there.</h2>
+            <h4 class="subheader">Welcome to your training logs.</h4>
+        </div>
     </div>
-</div>
-<div class="row">
-    <div class="large-4 small-8 columns">
-        <aside class="panel radius">
-            <ul class="side-nav">
-                <li>
-                    Squat (kg)
-                    <div class="progress success round"><span class="meter"></span></div>
-                </li>
+    <div class="row">
+        <div class="large-4 small-8 columns">
+            <aside class="panel radius">
+                <ul class="side-nav">
+                    <li>
+                        Squat (kg)
+                        <div class="progress success round"><span class="meter"></span></div>
+                    </li>
 
-                <li>
-                    Overhead Press (kg)
-                    <div class="progress success round"><span class="meter"></span></div>
-                </li>
+                    <li>
+                        Overhead Press (kg)
+                        <div class="progress success round"><span class="meter"></span></div>
+                    </li>
 
-                <li>
-                    Bench Press (kg)
-                    <div class="progress success round"><span class="meter"></span></div>
-                </li>
+                    <li>
+                        Bench Press (kg)
+                        <div class="progress success round"><span class="meter"></span></div>
+                    </li>
 
-                <li>
-                    Deadlift (kg)
-                    <div class="progress success round"><span class="meter"></span></div>
-                </li>
+                    <li>
+                        Deadlift (kg)
+                        <div class="progress success round"><span class="meter"></span></div>
+                    </li>
 
-                <li>
-                    Power Clean (kg)
-                    <div class="progress success round"><span class="meter"></span></div>
-                </li>
-            </ul>
-        </aside>
-    </div>
+                    <li>
+                        Power Clean (kg)
+                        <div class="progress success round"><span class="meter"></span></div>
+                    </li>
+                </ul>
+            </aside>
+        </div>
 
-    <div class="large-8 columns">
-            <form class="row collapse" method="POST" action="{{url_for('.log')}}">
+        <div class="large-8 columns" ng-controller="WorkoutCtrl">
+            <form class="row collapse">
                 <div class="small-11 columns">
                     <input name="log" type="text" placeholder="Example: today|squat@137.5x3+137.5x4,deadlift@42.5x5+42.5x5+42.5x4 # comment">
                 </div>
@@ -58,7 +51,6 @@
             </form>
             <div class="row">
                 <div class="large-12 columns">
-                    {% if total_count > 0 %}
                     <table class="workouts">
                         <thead>
                             <tr>
@@ -71,32 +63,26 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for workout in user.workouts.limit(limit).offset((page - 1) * limit) %}
-                            <tr>
-                                <td>{{workout.date}}</td>
-                                <td>{{display_sets(workout.lifts_map.squat)}}</td>
-                                <td>{{display_sets(workout.lifts_map.overhead_press)}}</td>
-                                <td>{{display_sets(workout.lifts_map.bench_press)}}</td>
-                                <td>{{display_sets(workout.lifts_map.deadlift)}}</td>
-                                <td>{{display_sets(workout.lifts_map.power_clean)}}</td>
+                            <tr ng-repeat="workout in workouts">
+                                <td><%=workout.date %></td>
+                                <td><%=workout.liftSetsMap.squat | reprSets %></td>
+                                <td><%=workout.liftSetsMap.overheadPress | reprSets %></td>
+                                <td><%=workout.liftSetsMap.benchPress | reprSets %></td>
+                                <td><%=workout.liftSetsMap.deadlift | reprSets %></td>
+                                <td><%=workout.liftSetsMap.powerClean | reprSets %></td>
                             </tr>
-                            {% endfor %}
                         </tbody>
                     </table>
 
                     <ul class="pagination">
-                        <li class="arrow {% if page == 1 %}unavailable{% endif %}"><a href="{{url_for('.dashboard', page=page - 1 if page > 1 else 1)}}">&laquo;</a></li>
-                        {% for i in range(1, total_pages + 1) %}
-                        <li{% if i == page %} class="current"{% endif %}><a href="{{url_for('.dashboard', page=i)}}">{{i}}</a></li>
-                        {% endfor %}
-                        <li class="arrow {% if page == total_pages %}unavailable{% endif %}"><a href="{{url_for('.dashboard', page=page + 1 if page < total_pages else total_pages)}}">&raquo;</a></li>
+
                     </ul>
-                    {% else %}
-                    <p>You don't have any workouts yet.</p>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+<script src="{{url_for('static', filename='app/main.js')}}"></script>
 {% endblock %}

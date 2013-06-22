@@ -19,19 +19,61 @@ def home():
     return flask.redirect(flask.url_for(".dashboard"))
 
 
+@app.route("/api/workouts")
+def api_workouts():
+    user = g.identity
+
+    offset = int(flask.request.args.get("offset", 0))
+    limit = int(flask.request.args.get("limit", -1))
+
+    q = user.workouts.offset(offset)
+    if limit > -1:
+        q = q.limit(limit)
+
+    return flask.jsonify({
+        "workouts": [x.to_api() for x in q]
+    })
+
+
+@app.route("/api/log", methods=["POST"])
+def log():
+    try:
+        workout = slf.parse_workout(flask.request.form["log"])
+    except:
+        return flask.jsonify({
+            "status": "error"
+        })
+
+    # FUCK TRANSACTIONS 2013
+    session = db.session()
+    w = Workout(user_id=g.identity.id,
+                date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
+                comment=workout["comment"])
+    session.add(w)
+    session.commit()
+
+    for i, lift in enumerate(workout["lifts"]):
+        l = Lift(workout_id=w.id, name=lift["name"].lower().replace(" ", "_"), order=i)
+        session.add(l)
+        session.commit()
+
+        for j, set in enumerate(lift["sets"]):
+            s = Set(lift_id=l.id, weight=set["weight"], reps=set["reps"], order=j)
+            session.add(s)
+
+        session.commit()
+
+    return flask.jsonify({
+        "status": "ok"
+    })
+
+
 @app.route("/dashboard")
 def dashboard():
     if g.identity is None:
         return flask.redirect(flask.url_for(".home"))
 
-    user = g.identity
-
-    total_count = user.workouts.count()
-    limit = 5
-    page = int(flask.request.args.get("page", 1))
-
-    return flask.render_template("dashboard.html", total_count=total_count, user=user, limit=limit,
-                                 page=page, total_pages=int(math.ceil(total_count / float(limit))))
+    return flask.render_template("dashboard.html")
 
 
 @app.route("/auth/login", methods=["POST"])
@@ -74,32 +116,3 @@ def logout():
         pass
 
     return "okay"
-
-
-@app.route("/log", methods=["POST"])
-def log():
-    try:
-        workout = slf.parse_workout(flask.request.form["log"])
-    except:
-        return "error"
-
-    # FUCK TRANSACTIONS 2013
-    session = db.session()
-    w = Workout(user_id=g.identity.id,
-                date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
-                comment=workout["comment"])
-    session.add(w)
-    session.commit()
-
-    for i, lift in enumerate(workout["lifts"]):
-        l = Lift(workout_id=w.id, name=lift["name"].lower().replace(" ", "_"), order=i)
-        session.add(l)
-        session.commit()
-
-        for j, set in enumerate(lift["sets"]):
-            s = Set(lift_id=l.id, weight=set["weight"], reps=set["reps"], order=j)
-            session.add(s)
-
-        session.commit()
-
-    return "ok"
