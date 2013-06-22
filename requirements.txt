@@ -1,0 +1,7 @@
+flask
+sqlalchemy
+flask-sqlalchemy
+flask-debugtoolbar
+venusian
+psycopg2
+requests

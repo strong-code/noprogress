@@ -1,0 +1,91 @@
+{% extends "_layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="large-12 columns">
+        <h2>Hey there.</h2>
+        <h4 class="subheader">Welcome to your training logs.</h4>
+    </div>
+</div>
+<div class="row">
+    <div class="large-4 small-8 columns">
+        <aside class="panel radius">
+            <ul class="side-nav">
+                <li>
+                    Squat (kg)
+                    <div class="progress success round"><span class="meter"></span></div>
+                </li>
+
+                <li>
+                    Overhead Press (kg)
+                    <div class="progress success round"><span class="meter"></span></div>
+                </li>
+
+                <li>
+                    Bench Press (kg)
+                    <div class="progress success round"><span class="meter"></span></div>
+                </li>
+
+                <li>
+                    Deadlift (kg)
+                    <div class="progress success round"><span class="meter"></span></div>
+                </li>
+
+                <li>
+                    Power Clean (kg)
+                    <div class="progress success round"><span class="meter"></span></div>
+                </li>
+            </ul>
+        </aside>
+    </div>
+
+    <div class="large-8 columns">
+        <table class="workouts">
+            <thead>
+                <tr>
+                    <th width="200">Date</th>
+                    <th width="150">Squat</th>
+                    <th width="150">Overhead Press</th>
+                    <th width="150">Bench Press</th>
+                    <th width="150">Deadlift</th>
+                    <th width="150">Power Clean</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>2013-06-22</td>
+                    <td>
+                        125kg/5<br/>
+                        125kg/5<br/>
+                        125kg/5<br/>
+                        125kg/5<br/>
+                        125kg/5
+                    </td>
+                    <td></td>
+                    <td>
+                        62.5kg/5<br/>
+                        62.5kg/5<br/>
+                        62.5kg/5
+                    </td>
+                    <td></td>
+                    <td>
+                        60kg/3<br/>
+                        60kg/3<br/>
+                        60kg/3<br/>
+                        60kg/3<br/>
+                        60kg/3
+                    </td
+                </tr>
+            </tbody>
+        </table>
+
+        <ul class="pagination">
+            <li class="arrow unavailable"><a href="">&laquo;</a></li>
+            <li class="current"><a href="">1</a></li>
+            <li class="arrow"><a href="">&raquo;</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

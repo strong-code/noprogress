@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}{% endblock %} :: noprogress</title>
+        <link href="{{url_for('static', filename='css/normalize.css')}}" rel="stylesheet">
+        <link href="{{url_for('static', filename='css/foundation.css')}}" rel="stylesheet">
+        <link href="{{url_for('static', filename='css/noprogress.css')}}" rel="stylesheet">
+    </head>
+    <body>
+        <div class="row">
+            <div class="large-12 columns">
+                <nav class="top-bar">
+                    <ul class="title-area">
+                        <li class="name">
+                            <h1><a href="{{url_for('.home')}}">noprogress</a></h1>
+                        </li>
+                        <li class="toggle-topbar menu-icon"><a href="#"><span>Menu</span></a></li>
+                    </ul>
+
+                    <section class="top-bar-section">
+                        <ul class="right">
+                            {% if identity %}
+                            <li class="divider"></li>
+                            <li>
+                                <a href="#" id="signout">Sign out ({{identity.email}})</a>
+                            </li>
+                            {% else %}
+                            <li>
+                                <a href="#" id="signin"><img src="{{url_for('static', filename='img/persona.png')}}"></a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </section>
+                </nav>
+            </div>
+        </div>
+        {% block content %}{% endblock %}
+        <footer class="row">
+            <hr />
+            <div class="large-12 columns">
+                we ♥ you like nhqe ♥ cock
+            </div>
+        </footer>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+        <script src="{{url_for('static', filename='js/foundation.min.js')}}"></script>
+        <script src="https://login.persona.org/include.js"></script>
+        <script>
+            $(document).foundation();
+
+            $("#signin").click(function(e) {
+                e.preventDefault();
+                navigator.id.request({
+                    siteName: "noprogress"
+                });
+            });
+
+            $("#signout").click(function(e) {
+                e.preventDefault();
+                navigator.id.logout();
+            });
+
+            navigator.id.watch({
+                loggedInUser: {{identity_email | tojson | safe}},
+
+                onlogin: function (assertion) {
+                    $.ajax({
+                        type: "POST",
+                        url: {{url_for('.login') | tojson | safe}},
+                        data: {assertion: assertion},
+                        success: function () {
+                            window.location.reload();
+                        },
+                        error: function (xhr, status, err) {
+                            alert("Login failure: " + err);
+                            navigator.id.logout();
+                        }
+                    })
+                },
+
+                onlogout: function () {
+                    $.ajax({
+                        type: "POST",
+                        url: {{url_for('.logout') | tojson | safe}},
+                        success: function () {
+                            window.location.reload();
+                        },
+                        error: function (xhr, status, err) {
+                            alert("Logout failure: " + err);
+                        }
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>
