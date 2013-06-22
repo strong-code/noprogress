@@ -95,7 +95,7 @@ class Lift(db.Model, IdMixin):
 class Set(db.Model, IdMixin):
     __tablename__ = "sets"
 
-    weight = db.Column(db.Integer, nullable=False)
+    weight = db.Column(db.Float, nullable=False)
     reps = db.Column(db.Integer, nullable=False)
     order = db.Column(db.Integer, nullable=False)
 

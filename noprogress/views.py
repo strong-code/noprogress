@@ -21,6 +21,9 @@ def home():
 
 @app.route("/dashboard")
 def dashboard():
+    if g.identity is None:
+        return flask.redirect(flask.url_for(".home"))
+
     user = g.identity
 
     total_count = user.workouts.count()
