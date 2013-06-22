@@ -1,23 +1,34 @@
 import flask
 import requests
 import json
+import datetime
+import math
+
+from flask import g
 
 from . import app, db
-from models import User
+from . import slf
+from models import User, Workout, Set, Lift
 
 
 @app.route("/")
 def home():
-    identity = User.current_identity()
-
-    if identity is None:
+    if g.identity is None:
         return flask.render_template("landing.html")
 
-    return dashboard()
+    return flask.redirect(flask.url_for(".dashboard"))
 
 
+@app.route("/dashboard")
 def dashboard():
-    return flask.render_template("dashboard.html")
+    user = g.identity
+
+    total_count = user.workouts.count()
+    limit = 5
+    page = int(flask.request.args.get("page", 1))
+
+    return flask.render_template("dashboard.html", total_count=total_count, user=user, limit=limit,
+                                 page=page, total_pages=int(math.ceil(total_count / float(limit))))
 
 
 @app.route("/auth/login", methods=["POST"])
@@ -60,3 +71,32 @@ def logout():
         pass
 
     return "okay"
+
+
+@app.route("/log", methods=["POST"])
+def log():
+    try:
+        workout = slf.parse_workout(flask.request.form["log"])
+    except:
+        return "error"
+
+    # FUCK TRANSACTIONS 2013
+    session = db.session()
+    w = Workout(user_id=g.identity.id,
+                date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
+                comment=workout["comment"])
+    session.add(w)
+    session.commit()
+
+    for i, lift in enumerate(workout["lifts"]):
+        l = Lift(workout_id=w.id, name=lift["name"].lower().replace(" ", "_"), order=i)
+        session.add(l)
+        session.commit()
+
+        for j, set in enumerate(lift["sets"]):
+            s = Set(lift_id=l.id, weight=set["weight"], reps=set["reps"], order=j)
+            session.add(s)
+
+        session.commit()
+
+    return "ok"

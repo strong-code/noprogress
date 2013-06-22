@@ -1,5 +1,11 @@
 {% extends "_layout.html" %}
 
+{% macro display_sets(sets) -%}
+    {% for set in sets %}
+        {{set.weight}}kg/{{set.reps}}<br>
+    {% endfor %}
+{%- endmacro %}
+
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
@@ -42,50 +48,55 @@
     </div>
 
     <div class="large-8 columns">
-        <table class="workouts">
-            <thead>
-                <tr>
-                    <th width="200">Date</th>
-                    <th width="150">Squat</th>
-                    <th width="150">Overhead Press</th>
-                    <th width="150">Bench Press</th>
-                    <th width="150">Deadlift</th>
-                    <th width="150">Power Clean</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>2013-06-22</td>
-                    <td>
-                        125kg/5<br/>
-                        125kg/5<br/>
-                        125kg/5<br/>
-                        125kg/5<br/>
-                        125kg/5
-                    </td>
-                    <td></td>
-                    <td>
-                        62.5kg/5<br/>
-                        62.5kg/5<br/>
-                        62.5kg/5
-                    </td>
-                    <td></td>
-                    <td>
-                        60kg/3<br/>
-                        60kg/3<br/>
-                        60kg/3<br/>
-                        60kg/3<br/>
-                        60kg/3
-                    </td
-                </tr>
-            </tbody>
-        </table>
+            <form class="row collapse" method="POST" action="{{url_for('.log')}}">
+                <div class="small-11 columns">
+                    <input name="log" type="text" placeholder="Example: today|squat@137.5x3+137.5x4,deadlift@42.5x5+42.5x5+42.5x4 # comment">
+                </div>
+                <div class="small-1 columns">
+                    <button class="prefix" type="submit">Log</button>
+                </div>
+            </form>
+            <div class="row">
+                <div class="large-12 columns">
+                    {% if total_count > 0 %}
+                    <table class="workouts">
+                        <thead>
+                            <tr>
+                                <th width="100">Date</th>
+                                <th width="150">Squat</th>
+                                <th width="150">Overhead Press</th>
+                                <th width="150">Bench Press</th>
+                                <th width="150">Deadlift</th>
+                                <th width="150">Power Clean</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for workout in user.workouts.limit(limit).offset((page - 1) * limit) %}
+                            <tr>
+                                <td>{{workout.date}}</td>
+                                <td>{{display_sets(workout.lifts_map.squat)}}</td>
+                                <td>{{display_sets(workout.lifts_map.overhead_press)}}</td>
+                                <td>{{display_sets(workout.lifts_map.bench_press)}}</td>
+                                <td>{{display_sets(workout.lifts_map.deadlift)}}</td>
+                                <td>{{display_sets(workout.lifts_map.power_clean)}}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
 
-        <ul class="pagination">
-            <li class="arrow unavailable"><a href="">&laquo;</a></li>
-            <li class="current"><a href="">1</a></li>
-            <li class="arrow"><a href="">&raquo;</a></li>
-        </ul>
+                    <ul class="pagination">
+                        <li class="arrow {% if page == 1 %}unavailable{% endif %}"><a href="{{url_for('.dashboard', page=page - 1 if page > 1 else 1)}}">&laquo;</a></li>
+                        {% for i in range(1, total_pages + 1) %}
+                        <li{% if i == page %} class="current"{% endif %}><a href="{{url_for('.dashboard', page=i)}}">{{i}}</a></li>
+                        {% endfor %}
+                        <li class="arrow {% if page == total_pages %}unavailable{% endif %}"><a href="{{url_for('.dashboard', page=page + 1 if page < total_pages else total_pages)}}">&raquo;</a></li>
+                    </ul>
+                    {% else %}
+                    <p>You don't have any workouts yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -44,13 +44,17 @@ class User(db.Model, IdMixin):
         return cls.by_email(email)
 
 
+@app.before_request
+def add_request_identity():
+    flask.g.identity = User.current_identity()
+
+
 @app.context_processor
 def inject_identity():
-    identity = User.current_identity()
     return {
-        "identity": identity,
-        "identity_email": identity.email if identity is not None \
-                                         else None
+        "identity": flask.g.identity,
+        "identity_email": flask.g.identity.email if flask.g.identity is not None \
+                                                 else None
     }
 
 
@@ -62,19 +66,30 @@ class Workout(db.Model, IdMixin):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     user = db.relationship("User", backref=db.backref("workouts",
-                                                      cascade="all, delete, delete-orphan"))
+                                                      cascade="all, delete, delete-orphan",
+                                                      lazy="dynamic"))
+
+    @property
+    def lifts_map(self):
+        if not hasattr(self, "_lifts_map"):
+            self._lifts_map = {}
+            for lift in self.lifts:
+                self._lifts_map.setdefault(lift.name, []).extend(lift.sets)
+        return self._lifts_map
 
 
 class Lift(db.Model, IdMixin):
     __tablename__ = "lifts"
 
-    name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False, index=True)
     order = db.Column(db.Integer, nullable=False)
 
     workout_id = db.Column(db.Integer, db.ForeignKey("workouts.id"), nullable=False)
 
     workout = db.relationship("Workout", backref=db.backref("lifts",
-                                                            cascade="all, delete, delete-orphan"))
+                                                            cascade="all, delete, delete-orphan",
+                                                            lazy="joined",
+                                                            order_by="Lift.order"))
 
 
 class Set(db.Model, IdMixin):
@@ -87,4 +102,6 @@ class Set(db.Model, IdMixin):
     lift_id = db.Column(db.Integer, db.ForeignKey("lifts.id"), nullable=False)
 
     lift = db.relationship("Lift", backref=db.backref("sets",
-                                                      cascade="all, delete, delete-orphan"))
+                                                      cascade="all, delete, delete-orphan",
+                                                      lazy="joined",
+                                                      order_by="Set.order"))
