@@ -31,18 +31,26 @@ def api_workouts():
         q = q.limit(limit)
 
     return flask.jsonify({
+        "total": user.workouts.count(),
         "workouts": [x.to_api() for x in q]
     })
 
 
+@app.route("/api/last")
+def api_last():
+    user = g.identity
+
+    return flask.jsonify({l.name: l.to_api()["sets"] for l in user.find_last()})
+
+
 @app.route("/api/log", methods=["POST"])
 def log():
+    log = flask.request.json.get("log", None)
+
     try:
-        workout = slf.parse_workout(flask.request.form["log"])
-    except:
-        return flask.jsonify({
-            "status": "error"
-        })
+        workout = slf.parse_workout(log)
+    except Exception:
+        flask.abort(400)
 
     # FUCK TRANSACTIONS 2013
     session = db.session()

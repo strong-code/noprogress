@@ -1,5 +1,6 @@
 import flask
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.sql.expression import desc
 
 from . import app, db
 
@@ -43,6 +44,16 @@ class User(db.Model, IdMixin):
             return None
         return cls.by_email(email)
 
+    def find_last(self):
+        stmt = db.session.query(Lift) \
+            .filter(Set.lift_id == Lift.id) \
+            .filter(Lift.workout_id == Workout.id) \
+            .filter(Workout.user_id == self.id) \
+            .order_by(desc(Workout.date)).subquery()
+
+        lift = db.aliased(Lift, stmt)
+
+        return db.session.query(lift).group_by(lift.name)
 
 @app.before_request
 def add_request_identity():
