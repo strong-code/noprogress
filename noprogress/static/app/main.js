@@ -196,7 +196,7 @@
     });
 
     noprogress.directive("workoutchart", function (api, strStd) {
-        var margin = {top: 20, right: 80, bottom: 30, left: 60},
+        var margin = {top: 20, right: 60, bottom: 30, left: 60},
             width = 960 - margin.left - margin.right,
             height = 250 - margin.top - margin.bottom;
 
@@ -236,7 +236,7 @@
                         .orient("left");
 
                     var line = d3.svg.line()
-                        .interpolate("basis")
+                        .defined(function(d) { return d.onerm !== null; })
                         .x(function(d) { return x(d.date); })
                         .y(function(d) { return y(d.onerm); });
 
@@ -265,7 +265,7 @@
 
                         x.domain(d3.extent(workouts, function(d) { return d.date; }));
                         y.domain([
-                            d3.min(onerms, function(c) { return d3.min(c.values, function(v) { return v.onerm; }); }),
+                            0,
                             d3.max(onerms, function(c) { return d3.max(c.values, function(v) { return v.onerm; }); })
                         ]);
 
@@ -289,17 +289,42 @@
                             .enter().append("g")
                                 .attr("class", "onerm");
 
-                        onerm.append("path")
+                        /*onerm.append("path")
                             .attr("class", "line")
                             .attr("d", function(d) { return line(d.values); })
-                            .style("stroke", function(d) { return color(d.name); });
+                            .style("stroke", function(d) { return color(d.name); });*/
 
-                        onerm.append("text")
-                            .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
-                            .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.onerm) + ")"; })
-                            .attr("x", 3)
-                            .attr("dy", ".35em")
-                            .text(function(d) { return api.liftNames[d.name]; });
+                        var points = svg.selectAll(".series")
+                            .data(onerms)
+                            .enter().append("g")
+                                .style("fill", function (d, i) { return color(d.name); })
+                                .selectAll(".point")
+                                .data(function (d) { return d.values; })
+                                .enter().append("svg:circle")
+                                    .filter(function (d) { return d.onerm !== null; })
+                                    .attr("cx", function (d, i) { return x(d.date); })
+                                    .attr("cy", function (d, i) { return y(d.onerm); })
+                                    .attr("r", function (d, i) { return 2; });
+
+                        var legend = svg.selectAll("g")
+                            .data(onerms)
+                            .enter()
+                            .append("g")
+                                .attr("class", "legend");
+
+                        legend.append("rect")
+                            .attr("x", width - 20)
+                            .attr("y", function(d, i){ return i *  20;})
+                            .attr("width", 10)
+                            .attr("height", 10)
+                            .style("fill", function(d) {
+                              return color(d.name);
+                            });
+
+                        legend.append("text")
+                            .attr("x", width - 8)
+                            .attr("y", function (d, i) { return (i *  20) + 9;})
+                            .text(function (d) { return d.name; });
                     });
                 };
                 scope.$on("workouts.updated", scope.refresh);
@@ -327,14 +352,30 @@
             api.last(function (err, data) {
                 $scope.last = data;
                 Object.keys(data).forEach(function (k) {
+                    if (!~api.lifts.indexOf(k)) {
+                        return;
+                    }
                     var v = data[k][0];
                     $scope.onerms[k] = strStd.wathan(v.weight, v.reps);
                     $scope.grades[k] = strStd.calculateGrades($scope.gender, k, $scope.bodyweight);
                     $scope.percents[k] = {};
 
-                    Object.keys($scope.grades[k]).forEach(function (l) {
-                        $scope.percents[k][l] = Math.min(100, Math.round($scope.onerms[k] * 100 / $scope.grades[k][l]));
-                    });
+                    var onerm = $scope.onerms[k];
+                    var grades = $scope.grades[k];
+                    var percent = 0;
+
+                    if (onerm < grades.novice) {
+                        percent = (onerm / grades.novice) * 0.25;
+                    } else if (onerm < grades.intermediate) {
+                        percent = (onerm / grades.intermediate) * 0.50;
+                    } else if (onerm < grades.advanced) {
+                        percent = (onerm / grades.advanced) * 0.75;
+                    } else if (onerm < grades.elite) {
+                        percent = onerm / grades.elite;
+                    } else {
+                        percent = 1;
+                    }
+                    $scope.percents[k] = Math.round(percent * 100);
                 });
             });
         };
@@ -357,7 +398,7 @@
 
         $scope.goToPage = function (page) {
             $scope.currentPage = page;
-            $scope.$emit("workouts.updated");
+            $scope.refresh();
         };
 
         $scope.nextPage = function () {

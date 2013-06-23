@@ -45,25 +45,26 @@ def api_last():
 
 @app.route("/api/log", methods=["POST"])
 def log():
-    log = flask.request.json.get("log", None)
+    logs = flask.request.json.get("log", None)
 
-    try:
-        workout = slf.parse_workout(log)
-    except Exception:
-        flask.abort(400)
+    for log in logs.split("\n"):
+        try:
+            workout = slf.parse_workout(log)
+        except Exception:
+            flask.abort(400)
 
-    session = db.session()
-    w = Workout(user=g.identity,
-                date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
-                comment=workout["comment"])
+        session = db.session()
+        w = Workout(user=g.identity,
+                    date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
+                    comment=workout["comment"])
 
-    for i, lift in enumerate(workout["lifts"]):
-        l = Lift(workout=w, name=lift["name"].lower().replace(" ", "_"), order=i)
-        session.add(l)
+        for i, lift in enumerate(workout["lifts"]):
+            l = Lift(workout=w, name=lift["name"].lower().replace(" ", "_"), order=i)
+            session.add(l)
 
-        for j, set in enumerate(lift["sets"]):
-            s = Set(lift=l, weight=set["weight"], reps=set["reps"], order=j)
-            session.add(s)
+            for j, set in enumerate(lift["sets"]):
+                s = Set(lift=l, weight=set["weight"], reps=set["reps"], order=j)
+                session.add(s)
 
     session.commit()
 

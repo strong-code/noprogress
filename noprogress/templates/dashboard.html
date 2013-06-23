@@ -15,7 +15,7 @@
                 <ul class="side-nav">
                     <li ng-repeat="lift in api.lifts" ng-hide="!last[lift]">
                         <h4><%= api.liftNames[lift] %> <small><%= last[lift] | reprSets %></small></h4>
-                        <div class="progress"><span class="meter" ng-style="{width: percents[lift].elite + '%'}"></span></div>
+                        <div class="progress"><span class="meter" ng-style="{width: percents[lift] + '%'}"></span></div>
                         <div style="position: relative; height: 32px; font-size: 0.6em">
                             <div style="position: absolute; left: 0;">Untrained<br><%= grades[lift].untrained %>kg</div>
                             <div style="position: absolute; left: 25%; width: 100px; text-align: center; margin-left: -50px;">Novice<br><%= grades[lift].novice %>kg</div>
@@ -31,7 +31,7 @@
         <div class="large-8 columns">
             <form class="row collapse" ng-controller="LogWorkoutCtrl" ng-submit="doLog()">
                 <div class="small-11 columns">
-                    <input ng-model="log" type="text" placeholder="Example: today|squat@137.5x3+137.5x4,deadlift@42.5x5+42.5x5+42.5x4 # comment">
+                    <textarea ng-model="log" placeholder="Example: today|squat@137.5x3+137.5x4,deadlift@42.5x5+42.5x5+42.5x4 # comment"></textarea>
                 </div>
                 <div class="small-1 columns">
                     <button class="prefix" type="submit">Log</button>

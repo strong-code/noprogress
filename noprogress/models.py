@@ -1,6 +1,6 @@
 import flask
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-from sqlalchemy.sql.expression import desc
+from sqlalchemy.sql.expression import asc
 
 from . import app, db
 
@@ -49,7 +49,7 @@ class User(db.Model, IdMixin):
             .filter(Set.lift_id == Lift.id) \
             .filter(Lift.workout_id == Workout.id) \
             .filter(Workout.user_id == self.id) \
-            .order_by(desc(Workout.date)).subquery()
+            .order_by(asc(Workout.date)).subquery()
 
         lift = db.aliased(Lift, stmt)
 
@@ -79,7 +79,7 @@ class Workout(db.Model, IdMixin):
     user = db.relationship("User", backref=db.backref("workouts",
                                                       cascade="all, delete, delete-orphan",
                                                       lazy="dynamic",
-                                                      order_by="Workout.date"))
+                                                      order_by="desc(Workout.date)"))
 
     def to_api(self):
         return {

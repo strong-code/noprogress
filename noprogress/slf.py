@@ -2,8 +2,9 @@
 
 import json
 import datetime
-import parsedatetime
+import dateutil.parser
 import time
+
 
 def parse_lift(raw):
     lift_name, raw_sets = raw.split("@")
@@ -24,16 +25,15 @@ def parse_lift(raw):
         "sets": sets
     }
 
-def parse_workout(line):
-    calendar = parsedatetime.Calendar()
 
+def parse_workout(line):
     line = line.strip()
     raw_date, _, right = line.rpartition("|")
 
     if not raw_date:
         date = datetime.date.today()
     else:
-        date = datetime.date.fromtimestamp(time.mktime(calendar.parse(raw_date)[0]))
+        date = dateutil.parser.parse(raw_date)
 
     raw_lifts, _, comment = right.partition("#")
 
@@ -49,6 +49,16 @@ def parse_workout(line):
         "comment": comment,
         "lifts": lifts
     }
+
+
+def dump_lift(lift):
+    return "{}@{}".format(lift["name"],
+                          "+".join("{}x{}".format(set["weight"], set["reps"]) for set in lift["sets"]))
+
+
+def dump_workout(workout):
+    return "{}|{}".format(workout["date"],
+                          ",".join(dump_lift(lift) for lift in workout["lifts"]))
 
 
 if __name__ == "__main__":

@@ -5,4 +5,4 @@ flask-debugtoolbar
 venusian
 psycopg2
 requests
-parsedatetime
+python-dateutil
