@@ -6,44 +6,23 @@
 <div id="app" ng-app="noprogress">
     <div class="row">
         <div class="large-12 columns">
-            <h2>Hey there.</h2>
-            <h4 class="subheader">Welcome to your training logs.</h4>
+            <workoutchart></workoutchart>
         </div>
     </div>
     <div class="row">
         <div class="large-4 small-8 columns">
-            <aside class="panel radius" ng-controller="StrStdCtrl">
+            <aside class="panel" ng-controller="StrStdCtrl">
                 <ul class="side-nav">
-                    <li ng-hide="!last.squat">
-                        Squat (<%= last.squat | reprSets %>)
-                        <div class="progress success round"><span class="meter" ng-style="{width: percents.squat.elite + '%'}"></span></div>
+                    <li ng-repeat="lift in api.lifts" ng-hide="!last[lift]">
+                        <h4><%= api.liftNames[lift] %> <small><%= last[lift] | reprSets %></small></h4>
+                        <div class="progress"><span class="meter" ng-style="{width: percents[lift].elite + '%'}"></span></div>
                         <div style="position: relative; height: 32px; font-size: 0.6em">
-                            <div style="position: absolute; left: 0;">Untrained</div>
-                            <div style="position: absolute; left: 25%; width: 100px; text-align: center; margin-left: -50px;">Novice</div>
-                            <div style="position: absolute; left: 50%; width: 100px; text-align: center; margin-left: -50px;">Intermediate</div>
-                            <div style="position: absolute; left: 75%; width: 100px; text-align: center; margin-left: -50px;">Advanced</div>
-                            <div style="position: absolute; right: 0;">Elite</div>
+                            <div style="position: absolute; left: 0;">Untrained<br><%= grades[lift].untrained %>kg</div>
+                            <div style="position: absolute; left: 25%; width: 100px; text-align: center; margin-left: -50px;">Novice<br><%= grades[lift].novice %>kg</div>
+                            <div style="position: absolute; left: 50%; width: 100px; text-align: center; margin-left: -50px;">Intermediate<br><%= grades[lift].intermediate %>kg</div>
+                            <div style="position: absolute; left: 75%; width: 100px; text-align: center; margin-left: -50px;">Advanced<br><%= grades[lift].advanced %>kg</div>
+                            <div style="position: absolute; right: 0; text-align: right;">Elite<br><%= grades[lift].elite %>kg</div>
                         </div>
-                    </li>
-
-                    <li ng-hide="!last.overhead_press">
-                        Overhead Press (<%= last.overhead_press | reprSets %>)
-                        <div class="progress success round"><span class="meter" ng-style="{width: percents.overhead_press.elite + '%'}"></span></div>
-                    </li>
-
-                    <li ng-hide="!last.bench_press">
-                        Bench Press (<%= last.bench_press | reprSets %>)
-                        <div class="progress success round"><span class="meter" ng-style="{width: percents.bench_press.elite + '%'}"></span></div>
-                    </li>
-
-                    <li ng-hide="!last.deadlift">
-                        Deadlift (<%= last.deadlift | reprSets %>)
-                        <div class="progress success round"><span class="meter" ng-style="{width: percents.deadlift.elite + '%'}"></span></div>
-                    </li>
-
-                    <li ng-hide="!last.power_clean">
-                        Power Clean (<%= last.power_clean | reprSets %>)
-                        <div class="progress success round"><span class="meter" ng-style="{width: percents.power_clean.elite + '%'}"></span></div>
                     </li>
                 </ul>
             </aside>
@@ -58,35 +37,27 @@
                     <button class="prefix" type="submit">Log</button>
                 </div>
             </form>
-            <div class="row">
-                <div class="large-12 columns" ng-controller="WorkoutsCtrl">
+            <div class="row" ng-controller="WorkoutsCtrl" ng-show="workouts.length > 0">
+                <div class="large-12 columns">
                     <table class="workouts">
                         <thead>
                             <tr>
                                 <th width="100">Date</th>
-                                <th width="150">Squat</th>
-                                <th width="150">Overhead Press</th>
-                                <th width="150">Bench Press</th>
-                                <th width="150">Deadlift</th>
-                                <th width="150">Power Clean</th>
+                                <th width="150" ng-repeat="lift in api.lifts"><%= api.liftNames[lift] %></th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-repeat="workout in workouts">
                                 <td><%=workout.date %></td>
-                                <td ng-bind-html-unsafe="workout.liftSetsMap.squat | reprSets"></td>
-                                <td ng-bind-html-unsafe="workout.liftSetsMap.overhead_press | reprSets"></td>
-                                <td ng-bind-html-unsafe="workout.liftSetsMap.bench_press | reprSets"/td>
-                                <td ng-bind-html-unsafe="workout.liftSetsMap.deadlift | reprSets"/td>
-                                <td ng-bind-html-unsafe="workout.liftSetsMap.power_clean | reprSets"/td>
+                                <td ng-repeat="lift in api.lifts" ng-bind-html-unsafe="workout.liftSetsMap[lift] | reprSets"></td>
                             </tr>
                         </tbody>
                     </table>
 
                     <ul class="pagination">
-                        <li class="arrow" ng-class="{unavailable: currentPage == 1}"><a href="#" ng-click="goToPage(1)">&laquo;</a></li>
+                        <li class="arrow" ng-class="{unavailable: currentPage == 1}"><a href="#" ng-click="previousPage()">&laquo;</a></li>
                         <li ng-repeat="page in pages" ng-class="{current: page == currentPage}"><a href="#" ng-click="goToPage(page)"><%= page %></a></li>
-                        <li class="arrow" ng-class="{unavailable: currentPage == totalPages}"><a href="#" ng-click="goToPage(totalPages)">&raquo;</a></li>
+                        <li class="arrow" ng-class="{unavailable: currentPage == totalPages}"><a href="#" ng-click="nextPage()">&raquo;</a></li>
                     </ul>
                 </div>
             </div>
@@ -95,5 +66,6 @@
 </div>
 
 <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <script src="{{url_for('static', filename='app/main.js')}}"></script>
 {% endblock %}

@@ -1,9 +1,78 @@
+/*jshint loopfunc: true */
 (function () {
     "use strict";
 
     var noprogress = angular.module("noprogress", [], function($interpolateProvider) {
         $interpolateProvider.startSymbol("<%=");
         $interpolateProvider.endSymbol("%>");
+    });
+
+    noprogress.factory("api", function ($http, $rootScope) {
+        var api = {
+            lifts: ["squat", "overhead_press", "bench_press", "deadlift", "power_clean"],
+            liftNames: {
+                squat: "Squat",
+                overhead_press: "Overhead Press",
+                bench_press: "Bench Press",
+                deadlift: "Deadlift",
+                power_clean: "Power Clean"
+            },
+
+            last: function last(cont) {
+                $http({
+                    method: "GET",
+                    url: "/api/last"
+                }).
+                    success(function (data, status, headers, config) {
+                        cont(null, data);
+                    }).
+                    error(function (err, status, headers, config) {
+                        cont(err, null);
+                    });
+            },
+
+            log: function log(workout, cont) {
+                $http({
+                    method: "POST",
+                    url: "/api/log",
+                    data: {log: workout}
+                }).
+                    success(function (data, status, headers, config) {
+                        cont(null, data);
+                    }).
+                    error(function (err, status, headers, config) {
+                        cont(err, null);
+                    });
+            },
+
+            workouts: function workouts(offset, limit, cont) {
+                $http({
+                    method: "GET",
+                    url: "/api/workouts",
+                    params: {
+                        offset: offset,
+                        limit: limit
+                    }
+                }).
+                    success(function (data, status, headers, config) {
+                        var workouts = data.workouts;
+
+                        workouts.forEach(function (workout) {
+                            workout.liftSetsMap = {};
+                            workout.lifts.forEach(function (lift) {
+                                workout.liftSetsMap[lift.name] = lift.sets;
+                            });
+                        });
+
+                        cont(null, data);
+                    }).
+                    error(function (err, status, headers, config) {
+                        cont(err, null);
+                    });
+            }
+        };
+        $rootScope.api = api;
+        return api;
     });
 
     noprogress.factory("strStd", function () {
@@ -25,7 +94,10 @@
             for (var i = 0; i < table.length; ++i) {
                 var bwLimit = lbToKg(table[i][0]);
                 if (bw < bwLimit) {
-                    var bits = table[i].slice(1).map(lbToKg);
+                    var bits = table[i].slice(1).map(function (v) {
+                        return Math.round(lbToKg(v));
+                    });
+
                     return {
                         untrained: bits[0],
                         novice: bits[1],
@@ -123,6 +195,119 @@
         };
     });
 
+    noprogress.directive("workoutchart", function (api, strStd) {
+        var margin = {top: 20, right: 80, bottom: 30, left: 60},
+            width = 960 - margin.left - margin.right,
+            height = 250 - margin.top - margin.bottom;
+
+        function onermCalc(sets) {
+            return strStd.wathan(sets[0].weight, sets[0].reps);
+        }
+
+        return {
+            restrict: "E",
+            link: function (scope, element, attrs) {
+                var parseDate = d3.time.format("%Y-%m-%d").parse;
+
+                scope.refresh = function () {
+                    d3.select(element[0]).selectAll("svg").remove();
+
+                    var svg = d3.select(element[0])
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                    var color = d3.scale.category10();
+
+                    var x = d3.time.scale()
+                        .range([0, width]);
+
+                    var y = d3.scale.linear()
+                        .range([height, 0]);
+
+                    var xAxis = d3.svg.axis()
+                        .scale(x)
+                        .orient("bottom");
+
+                    var yAxis = d3.svg.axis()
+                        .scale(y)
+                        .orient("left");
+
+                    var line = d3.svg.line()
+                        .interpolate("basis")
+                        .x(function(d) { return x(d.date); })
+                        .y(function(d) { return y(d.onerm); });
+
+                    api.workouts(0, -1, function(err, data) {
+                        if (data.total === 0) {
+                            return;
+                        }
+                        var workouts = data.workouts;
+                        workouts.forEach(function (d) {
+                            d.date = parseDate(d.date);
+                        });
+
+                        color.domain(api.lifts);
+
+                        var onerms = color.domain().map(function (name) {
+                            return {
+                                name: name,
+                                values: workouts.map(function (d) {
+                                    return {
+                                        date: d.date,
+                                        onerm: d.liftSetsMap[name] ? onermCalc(d.liftSetsMap[name]) : null
+                                    };
+                                })
+                            };
+                        });
+
+                        x.domain(d3.extent(workouts, function(d) { return d.date; }));
+                        y.domain([
+                            d3.min(onerms, function(c) { return d3.min(c.values, function(v) { return v.onerm; }); }),
+                            d3.max(onerms, function(c) { return d3.max(c.values, function(v) { return v.onerm; }); })
+                        ]);
+
+                        svg.append("g")
+                            .attr("class", "x axis")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(xAxis);
+
+                        svg.append("g")
+                            .attr("class", "y axis")
+                            .call(yAxis)
+                            .append("text")
+                                .attr("transform", "rotate(-90)")
+                                .attr("y", 6)
+                                .attr("dy", ".71em")
+                                .style("text-anchor", "end")
+                                .text("1RM (kg)");
+
+                        var onerm = svg.selectAll(".onerm")
+                            .data(onerms)
+                            .enter().append("g")
+                                .attr("class", "onerm");
+
+                        onerm.append("path")
+                            .attr("class", "line")
+                            .attr("d", function(d) { return line(d.values); })
+                            .style("stroke", function(d) { return color(d.name); });
+
+                        onerm.append("text")
+                            .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+                            .attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.onerm) + ")"; })
+                            .attr("x", 3)
+                            .attr("dy", ".35em")
+                            .text(function(d) { return api.liftNames[d.name]; });
+                    });
+                };
+                scope.$on("workouts.updated", scope.refresh);
+                scope.refresh();
+            }
+        };
+    });
+
     noprogress.filter("reprSets", function () {
         return function (sets) {
             if (!sets) return "";
@@ -130,7 +315,7 @@
         };
     });
 
-    noprogress.controller("StrStdCtrl", function ($scope, $http, strStd) {
+    noprogress.controller("StrStdCtrl", function ($scope, strStd, api) {
         $scope.bodyweight = 70;
         $scope.gender = "male";
 
@@ -138,11 +323,8 @@
         $scope.onerms = {};
         $scope.percents = {};
 
-        $http({
-            method: "GET",
-            url: "/api/last"
-        }).
-            success(function (data, status, headers, config) {
+        $scope.refresh = function () {
+            api.last(function (err, data) {
                 $scope.last = data;
                 Object.keys(data).forEach(function (k) {
                     var v = data[k][0];
@@ -154,25 +336,22 @@
                         $scope.percents[k][l] = Math.min(100, Math.round($scope.onerms[k] * 100 / $scope.grades[k][l]));
                     });
                 });
-                console.log($scope.percents);
             });
+        };
+        $scope.refresh();
+        $scope.$on("workouts.updated", $scope.refresh);
     });
 
-    noprogress.controller("LogWorkoutCtrl", function ($rootScope, $scope, $http) {
+    noprogress.controller("LogWorkoutCtrl", function ($rootScope, $scope, api) {
         $scope.doLog = function () {
-            $http({
-                method: "POST",
-                url: "/api/log",
-                data: {log: $scope.log}
-            }).
-                success(function (data, status, headers, config) {
-                    $rootScope.$broadcast("workouts.updated");
-                    $scope.log = "";
-                });
+            api.log($scope.log, function (err, data) {
+                $rootScope.$broadcast("workouts.updated");
+                $scope.log = "";
+            });
         };
     });
 
-    noprogress.controller("WorkoutsCtrl", function ($scope, $http) {
+    noprogress.controller("WorkoutsCtrl", function ($scope, api) {
         $scope.limit = 5;
         $scope.currentPage = 1;
 
@@ -181,34 +360,29 @@
             $scope.$emit("workouts.updated");
         };
 
+        $scope.nextPage = function () {
+            var page = Math.min($scope.currentPage + 1, $scope.totalPages);
+            $scope.goToPage(page);
+        };
+
+        $scope.previousPage = function () {
+            var page = Math.max($scope.currentPage - 1, 1);
+            $scope.goToPage(page);
+        };
+
         $scope.refresh = function () {
-            $http({
-                method: "GET",
-                url: "/api/workouts",
-                params: {
-                    offset: ($scope.currentPage - 1) * $scope.limit,
-                    limit: $scope.limit
+            api.workouts(($scope.currentPage - 1) * $scope.limit, $scope.limit, function (err, data) {
+                var workouts = data.workouts;
+
+                $scope.workouts = workouts;
+                $scope.totalPages = Math.ceil(data.total / $scope.limit);
+
+                $scope.pages = [];
+
+                for (var i = 1; i <= $scope.totalPages; ++i) {
+                    $scope.pages.push(i);
                 }
-            }).
-                success(function (data, status, headers, config) {
-                    var workouts = data.workouts;
-
-                    workouts.forEach(function (workout) {
-                        workout.liftSetsMap = {};
-                        workout.lifts.forEach(function (lift) {
-                            workout.liftSetsMap[lift.name] = lift.sets;
-                        });
-                    });
-
-                    $scope.workouts = workouts;
-                    $scope.totalPages = Math.ceil(data.total / $scope.limit);
-
-                    $scope.pages = [];
-
-                    for (var i = 1; i <= $scope.totalPages; ++i) {
-                        $scope.pages.push(i);
-                    }
-                });
+            });
         };
         $scope.refresh();
         $scope.$on("workouts.updated", $scope.refresh);

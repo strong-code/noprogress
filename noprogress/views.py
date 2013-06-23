@@ -52,24 +52,20 @@ def log():
     except Exception:
         flask.abort(400)
 
-    # FUCK TRANSACTIONS 2013
     session = db.session()
-    w = Workout(user_id=g.identity.id,
+    w = Workout(user=g.identity,
                 date=datetime.datetime.strptime(workout["date"], "%Y-%m-%d").date(),
                 comment=workout["comment"])
-    session.add(w)
-    session.commit()
 
     for i, lift in enumerate(workout["lifts"]):
-        l = Lift(workout_id=w.id, name=lift["name"].lower().replace(" ", "_"), order=i)
+        l = Lift(workout=w, name=lift["name"].lower().replace(" ", "_"), order=i)
         session.add(l)
-        session.commit()
 
         for j, set in enumerate(lift["sets"]):
-            s = Set(lift_id=l.id, weight=set["weight"], reps=set["reps"], order=j)
+            s = Set(lift=l, weight=set["weight"], reps=set["reps"], order=j)
             session.add(s)
 
-        session.commit()
+    session.commit()
 
     return flask.jsonify({
         "status": "ok"

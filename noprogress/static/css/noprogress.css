@@ -1,3 +1,25 @@
 .workouts td {
     vertical-align: top;
 }
+
+workoutchart {
+    font-size: 10px;
+}
+
+workoutchart .axis path,
+workoutchart .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+workoutchart .x.axis path {
+    display: none;
+}
+
+workoutchart .line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+
