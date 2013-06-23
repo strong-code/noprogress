@@ -196,7 +196,7 @@
     });
 
     noprogress.directive("workoutchart", function (api, strStd) {
-        var margin = {top: 20, right: 60, bottom: 30, left: 60},
+        var margin = {top: 20, right: 100, bottom: 30, left: 60},
             width = 960 - margin.left - margin.right,
             height = 250 - margin.top - margin.bottom;
 
@@ -270,6 +270,16 @@
                         ]);
 
                         svg.append("g")
+                            .attr("class", "x grid")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(d3.svg.axis().scale(x).tickSubdivide(1).tickSize(-height));
+
+                        svg.append("g")
+                            .attr("class", "y grid")
+                            .attr("transform", "rotate(90)")
+                            .call(d3.svg.axis().scale(y).tickSubdivide(1).tickSize(-width));
+
+                        svg.append("g")
                             .attr("class", "x axis")
                             .attr("transform", "translate(0," + height + ")")
                             .call(xAxis);
@@ -284,12 +294,12 @@
                                 .style("text-anchor", "end")
                                 .text("1RM (kg)");
 
-                        var onerm = svg.selectAll(".onerm")
+                        /*var onerm = svg.selectAll(".onerm")
                             .data(onerms)
                             .enter().append("g")
                                 .attr("class", "onerm");
 
-                        /*onerm.append("path")
+                        onerm.append("path")
                             .attr("class", "line")
                             .attr("d", function(d) { return line(d.values); })
                             .style("stroke", function(d) { return color(d.name); });*/
@@ -306,25 +316,28 @@
                                     .attr("cy", function (d, i) { return y(d.onerm); })
                                     .attr("r", function (d, i) { return 2; });
 
-                        var legend = svg.selectAll("g")
+                        var legend = svg.append("g")
+                            .attr("class", "legend")
+                            .selectAll(".series")
                             .data(onerms)
                             .enter()
                             .append("g")
-                                .attr("class", "legend");
+                                .attr("transform", "translate(" + (width + 5) + ",0)")
+                                .attr("class", "series");
 
                         legend.append("rect")
-                            .attr("x", width - 20)
-                            .attr("y", function(d, i){ return i *  20;})
+                            .attr("x", 0)
+                            .attr("y", function(d, i){ return i * 20; })
                             .attr("width", 10)
                             .attr("height", 10)
                             .style("fill", function(d) {
-                              return color(d.name);
+                                return color(d.name);
                             });
 
                         legend.append("text")
-                            .attr("x", width - 8)
+                            .attr("x", 20)
                             .attr("y", function (d, i) { return (i *  20) + 9;})
-                            .text(function (d) { return d.name; });
+                            .text(function (d) { return api.liftNames[d.name]; });
                     });
                 };
                 scope.$on("workouts.updated", scope.refresh);

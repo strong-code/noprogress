@@ -39,6 +39,12 @@
             </form>
             <div class="row" ng-controller="WorkoutsCtrl" ng-show="workouts.length > 0">
                 <div class="large-12 columns">
+                    <ul class="pagination">
+                        <li class="arrow" ng-class="{unavailable: currentPage == 1}"><a href="#" ng-click="previousPage()">&laquo;</a></li>
+                        <li ng-repeat="page in pages" ng-class="{current: page == currentPage}"><a href="#" ng-click="goToPage(page)"><%= page %></a></li>
+                        <li class="arrow" ng-class="{unavailable: currentPage == totalPages}"><a href="#" ng-click="nextPage()">&raquo;</a></li>
+                    </ul>
+
                     <table class="workouts">
                         <thead>
                             <tr>
@@ -53,12 +59,6 @@
                             </tr>
                         </tbody>
                     </table>
-
-                    <ul class="pagination">
-                        <li class="arrow" ng-class="{unavailable: currentPage == 1}"><a href="#" ng-click="previousPage()">&laquo;</a></li>
-                        <li ng-repeat="page in pages" ng-class="{current: page == currentPage}"><a href="#" ng-click="goToPage(page)"><%= page %></a></li>
-                        <li class="arrow" ng-class="{unavailable: currentPage == totalPages}"><a href="#" ng-click="nextPage()">&raquo;</a></li>
-                    </ul>
                 </div>
             </div>
         </div>

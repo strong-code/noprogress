@@ -13,13 +13,24 @@ workoutchart .axis line {
     shape-rendering: crispEdges;
 }
 
-workoutchart .x.axis path {
-    display: none;
-}
-
 workoutchart .line {
     fill: none;
     stroke: steelblue;
     stroke-width: 1.5px;
 }
 
+workoutchart .grid {
+    fill: none;
+}
+
+workoutchart .grid line {
+    stroke: #ccc;
+}
+
+workoutchart .grid line.minor {
+    stroke: #eee;
+}
+
+workoutchart .grid text {
+    display: none;
+}
